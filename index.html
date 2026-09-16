@@ -311,11 +311,27 @@ const INITIAL_STATE = {
   meta:{ date:'', module:'', affaire:'', soustraitant:'', soustraitant_autre:'', controleur:'', controleur_autre:'' },
   lines:{},      // key -> 'ok' | 'nok'
   photos:{},     // key -> [dataURL,...]
-  sig:{ soustraitant_nom:'', loxam_nom:'', soustraitant_img:'', loxam_img:'' }
+  // *_auto : tant que vrai, le nom du signataire est reporté automatiquement
+  // depuis les infos générales ; passe à faux dès que l'utilisateur corrige
+  // le champ à la main, pour ne plus l'écraser ensuite.
+  sig:{ soustraitant_nom:'', loxam_nom:'', soustraitant_img:'', loxam_img:'', soustraitant_nom_auto:true, loxam_nom_auto:true }
 };
 let state = JSON.parse(JSON.stringify(INITIAL_STATE));
 
 function lineKey(chId, idx){ return chId+'|'+idx; }
+
+function resolvedSoustraitant(){
+  return state.meta.soustraitant === '__autre__' ? (state.meta.soustraitant_autre||'') : (state.meta.soustraitant||'');
+}
+function resolvedControleur(){
+  return state.meta.controleur === '__autre__' ? (state.meta.controleur_autre||'') : (state.meta.controleur||'');
+}
+/* Reporte le nom de la société sous-traitante et le nom du contrôleur dans les
+   champs signataire, tant que l'utilisateur ne les a pas corrigés à la main. */
+function syncSignatureNames(){
+  if(state.sig.soustraitant_nom_auto !== false) state.sig.soustraitant_nom = resolvedSoustraitant();
+  if(state.sig.loxam_nom_auto !== false) state.sig.loxam_nom = resolvedControleur();
+}
 
 /* ---------- RENDU ---------- */
 document.getElementById('titleWithIcon').innerHTML = icon('clipboardCheck',15) + '<span>CHECKLIST PARC</span>';
@@ -329,7 +345,7 @@ function renderInfoSection(){
     el('input',{type:'date', id:'f_date', value:state.meta.date, oninput:(e)=>state.meta.date=e.target.value})));
   grid.append(el('div',{class:'field'},
     el('label','Numéro du module'),
-    el('input',{type:'text', id:'f_module', placeholder:'Ex : M-1234', value:state.meta.module, oninput:(e)=>state.meta.module=e.target.value})));
+    el('input',{type:'text', id:'f_module', placeholder:'Ex : 6046', value:state.meta.module, oninput:(e)=>state.meta.module=e.target.value})));
   c.append(grid);
 
   c.append(el('div',{class:'field'},
@@ -338,7 +354,7 @@ function renderInfoSection(){
     el('datalist',{id:'dl_affaires'})));
 
   const grid2 = el('div',{class:'grid2'});
-  const sel = el('select',{id:'f_soustraitant', oninput:(e)=>{ state.meta.soustraitant=e.target.value; renderAll(); }});
+  const sel = el('select',{id:'f_soustraitant', oninput:(e)=>{ state.meta.soustraitant=e.target.value; syncSignatureNames(); renderAll(); }});
   sel.append(el('option',{value:''},'— Sélectionner —'));
   SOUS_TRAITANTS.forEach(s=>{
     const o = el('option',{value:s}, s);
@@ -350,7 +366,7 @@ function renderInfoSection(){
   sel.append(oAutre);
   grid2.append(el('div',{class:'field'}, el('label','Sous-traitant'), sel));
 
-  const selCtrl = el('select',{id:'f_controleur', oninput:(e)=>{ state.meta.controleur=e.target.value; renderAll(); }});
+  const selCtrl = el('select',{id:'f_controleur', oninput:(e)=>{ state.meta.controleur=e.target.value; syncSignatureNames(); renderAll(); }});
   selCtrl.append(el('option',{value:''},'— Sélectionner —'));
   CONTROLEURS.forEach(s=>{
     const o = el('option',{value:s}, s);
@@ -366,12 +382,22 @@ function renderInfoSection(){
   if(state.meta.soustraitant === '__autre__'){
     c.append(el('div',{class:'field'},
       el('label','Précisez le sous-traitant'),
-      el('input',{type:'text', value:state.meta.soustraitant_autre, oninput:(e)=>state.meta.soustraitant_autre=e.target.value})));
+      el('input',{type:'text', value:state.meta.soustraitant_autre, oninput:(e)=>{
+        state.meta.soustraitant_autre = e.target.value;
+        syncSignatureNames();
+        const sigInput = document.getElementById('sig1_name');
+        if(sigInput && state.sig.soustraitant_nom_auto !== false) sigInput.value = state.sig.soustraitant_nom;
+      }})));
   }
   if(state.meta.controleur === '__autre__'){
     c.append(el('div',{class:'field'},
       el('label','Précisez le contrôleur'),
-      el('input',{type:'text', value:state.meta.controleur_autre, oninput:(e)=>state.meta.controleur_autre=e.target.value})));
+      el('input',{type:'text', value:state.meta.controleur_autre, oninput:(e)=>{
+        state.meta.controleur_autre = e.target.value;
+        syncSignatureNames();
+        const sigInput = document.getElementById('sig2_name');
+        if(sigInput && state.sig.loxam_nom_auto !== false) sigInput.value = state.sig.loxam_nom;
+      }})));
   }
   return c;
 }
@@ -458,10 +484,13 @@ function renderChapterSection(def){
    « Appuyer pour signer » pour déverrouiller le pavé de cette signature. */
 const sigUnlocked = { 1:false, 2:false };
 
-function renderSigCell(n, label, placeholder, nameKey){
+function renderSigCell(n, label, placeholder, nameKey, autoKey){
   const cell = el('div',{class:'sig-cell'});
   cell.append(el('div',{class:'sig-label'}, label));
-  cell.append(el('input',{type:'text', placeholder:placeholder, value:state.sig[nameKey], oninput:(e)=>state.sig[nameKey]=e.target.value}));
+  cell.append(el('input',{type:'text', id:'sig'+n+'_name', placeholder:placeholder, value:state.sig[nameKey], oninput:(e)=>{
+    state.sig[nameKey] = e.target.value;
+    state.sig[autoKey] = false; // l'utilisateur corrige à la main : on arrête le report automatique
+  }}));
 
   const wrap = el('div',{class:'sig-cwrap'});
   const canvas = el('canvas',{class:'sig-canvas', id:'sig'+n});
@@ -489,8 +518,8 @@ function renderSignaturesSection(){
   const c = el('section',{class:'card', id:'sec-signatures'});
   c.append(el('h2', iconNode('clipboardCheck',16), el('span','Validation')));
   c.append(el('p',{class:'hint'}, 'Le pavé de signature est verrouillé par défaut : appuyer dessus pour l\'activer, afin d\'éviter une signature accidentelle.'));
-  c.append(renderSigCell(1, 'Signature du sous-traitant', 'Nom du signataire', 'soustraitant_nom'));
-  c.append(renderSigCell(2, 'Signature du représentant Loxam Module', 'Nom du représentant', 'loxam_nom'));
+  c.append(renderSigCell(1, 'Signature du sous-traitant', 'Nom du signataire', 'soustraitant_nom', 'soustraitant_nom_auto'));
+  c.append(renderSigCell(2, 'Signature du représentant Loxam Module', 'Nom du représentant', 'loxam_nom', 'loxam_nom_auto'));
   return c;
 }
 
@@ -686,7 +715,7 @@ async function generatePDF(){
     doc.setFont('helvetica','bold'); doc.setFontSize(13.5);
     doc.text('CHECKLIST PARC', W-M-8, 40, {align:'right'});
     doc.setTextColor(128,118,104); doc.setFontSize(8.6);
-    doc.text('LOXAM MODULE · Sortie de hangar', W-M-8, 55, {align:'right'});
+    doc.text('LOXAM MODULE', W-M-8, 55, {align:'right'});
     doc.setFillColor(RED[0],RED[1],RED[2]);
     doc.roundedRect(M-8, 72, CW+16, 3.5, 2, 2, 'F');
     doc.setDrawColor(RED[0],RED[1],RED[2]); doc.setLineWidth(0.9);
@@ -875,6 +904,7 @@ document.getElementById('pdfBtn').addEventListener('click', async ()=>{
 (function init(){
   loadDraft();
   applyDateParDefaut();
+  syncSignatureNames();
   renderAll();
   setInterval(()=>saveDraft(true), 20000);
   let saveTimer = null;

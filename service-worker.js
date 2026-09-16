@@ -1,4 +1,4 @@
-const CACHE_NAME = 'checklist-parc-v4';
+const CACHE_NAME = 'checklist-parc-v5';
 const ASSETS = [
   './',
   './index.html',
