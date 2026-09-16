@@ -135,7 +135,6 @@ footer.legal-footer{
   border:none; border-radius:11px; padding:0 16px; height:48px; font-size:14px; font-weight:700;
 }
 .btn-danger-ghost{background:#F1F3F6; color:var(--nok); flex:0 0 54px;}
-.btn-ghost{background:#F1F3F6; color:var(--sub); flex:0 0 54px;}
 .btn-primary{background:var(--red); color:#fff; flex:1;}
 
 .toast{
@@ -171,7 +170,6 @@ input[type=file]{display:none;}
 
 <div class="sticky-footer">
   <button class="btn btn-danger-ghost" id="resetBtn" title="Nouvelle fiche"></button>
-  <button class="btn btn-ghost" id="saveBtn" title="Enregistrer"></button>
   <button class="btn btn-primary" id="pdfBtn"></button>
 </div>
 
@@ -669,9 +667,7 @@ function openResetModal(){
 }
 
 document.getElementById('resetBtn').addEventListener('click', openResetModal);
-document.getElementById('saveBtn').addEventListener('click', ()=>saveDraft(false));
 document.getElementById('resetBtn').innerHTML = icon('trash',18);
-document.getElementById('saveBtn').innerHTML = icon('save',18);
 document.getElementById('pdfBtn').innerHTML = icon('file',16) + '<span>Générer le PDF</span>';
 
 /* ---------- GÉNÉRATION PDF (charte identique à Loxcheck) ---------- */
