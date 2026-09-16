@@ -105,7 +105,15 @@ input, select, textarea{ max-width:100%; min-width:0; box-sizing:border-box; }
 .sig-cell{border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:14px;}
 .sig-cell .sig-label{font-size:11.5px; font-weight:700; color:var(--sub); margin-bottom:8px;}
 .sig-cell input[type=text]{width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 9px; font-size:13.5px; margin-bottom:8px; background:#fff;}
+.sig-cwrap{position:relative;}
 .sig-canvas{width:100%; height:170px; border:1.5px dashed var(--line); border-radius:8px; background:#fff; touch-action:none; display:block;}
+.sig-lock{
+  position:absolute; inset:0; width:100%; height:100%; border:none; padding:6px;
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  background:rgba(255,255,255,.82); color:var(--sub); font-size:13.5px; font-weight:700;
+  border-radius:8px; cursor:pointer; text-align:center; z-index:2;
+}
+.sig-lock .ico{margin-right:0;}
 .sig-clear{margin-top:6px; background:#EEF0F3; color:var(--red-dark); border:none; border-radius:8px; padding:7px 10px; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:6px;}
 
 footer.legal-footer{
@@ -150,7 +158,7 @@ input[type=file]{display:none;}
     </div>
     <div style="text-align:right;">
       <div class="title" id="titleWithIcon">CHECKLIST PARC</div>
-      <div class="agence">LOXAM MODULE &nbsp;·&nbsp; Sortie de hangar</div>
+      <div class="agence">LOXAM MODULE</div>
     </div>
   </div>
   <div class="progress-wrap">
@@ -195,7 +203,8 @@ function icon(name, size){
     wrench:  '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',
     armchair:'<path d="M5 12V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v4"/><path d="M4 12h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2z"/><path d="M6 19v2M18 19v2"/>',
     user:    '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-    truck:   '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>'
+    truck:   '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+    edit:    '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
   };
   const sz = size || 18;
   return '<svg class="ico" viewBox="0 0 24 24" width="'+sz+'" height="'+sz+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[name]||'')+'</svg>';
@@ -223,6 +232,12 @@ function el(tag, attrs, ...children){
     else node.appendChild(c);
   });
   return node;
+}
+/* Retourne l'icône SVG comme véritable nœud DOM (à utiliser avec el(), jamais comme chaîne) */
+function iconNode(name, size){
+  const wrap = document.createElement('span');
+  wrap.innerHTML = icon(name, size);
+  return wrap.firstElementChild;
 }
 
 /* ---------- DONNÉES CHECKLIST (structure reprise du document A4 LOXAM MODULE) ---------- */
@@ -288,14 +303,15 @@ const CHAPTERS = [
 ];
 
 const SOUS_TRAITANTS = ['CRPS','TCPP','TERMICLIM','CC BAT','EMS','CMTG','MOKRANE'];
+const CONTROLEURS = ['Christophe SCOTTO','Gérald BAFARO','Christophe HAZART','Emanuele BONSIGNORE'];
 const STORAGE_KEY = 'checklist_parc_draft_v1';
 const AFFAIRES_KEY = 'checklist_parc_affaires_v1';
 
 const INITIAL_STATE = {
-  meta:{ date:'', module:'', affaire:'', soustraitant:'', soustraitant_autre:'', controleur:'' },
+  meta:{ date:'', module:'', affaire:'', soustraitant:'', soustraitant_autre:'', controleur:'', controleur_autre:'' },
   lines:{},      // key -> 'ok' | 'nok'
   photos:{},     // key -> [dataURL,...]
-  sig:{ soustraitant_nom:'', loxam_nom:'' }
+  sig:{ soustraitant_nom:'', loxam_nom:'', soustraitant_img:'', loxam_img:'' }
 };
 let state = JSON.parse(JSON.stringify(INITIAL_STATE));
 
@@ -306,7 +322,7 @@ document.getElementById('titleWithIcon').innerHTML = icon('clipboardCheck',15) +
 
 function renderInfoSection(){
   const c = el('section',{class:'card', id:'sec-info'});
-  c.append(el('h2', icon('user',16), el('span','Informations générales')));
+  c.append(el('h2', iconNode('user',16), el('span','Informations générales')));
   const grid = el('div',{class:'grid2'});
   grid.append(el('div',{class:'field'},
     el('label','Date'),
@@ -333,15 +349,29 @@ function renderInfoSection(){
   if(state.meta.soustraitant === '__autre__') oAutre.setAttribute('selected','selected');
   sel.append(oAutre);
   grid2.append(el('div',{class:'field'}, el('label','Sous-traitant'), sel));
-  grid2.append(el('div',{class:'field'},
-    el('label','Contrôleur'),
-    el('input',{type:'text', id:'f_controleur', placeholder:'Nom du contrôleur', value:state.meta.controleur, oninput:(e)=>state.meta.controleur=e.target.value})));
+
+  const selCtrl = el('select',{id:'f_controleur', oninput:(e)=>{ state.meta.controleur=e.target.value; renderAll(); }});
+  selCtrl.append(el('option',{value:''},'— Sélectionner —'));
+  CONTROLEURS.forEach(s=>{
+    const o = el('option',{value:s}, s);
+    if(state.meta.controleur === s) o.setAttribute('selected','selected');
+    selCtrl.append(o);
+  });
+  const oAutreCtrl = el('option',{value:'__autre__'},'Autre…');
+  if(state.meta.controleur === '__autre__') oAutreCtrl.setAttribute('selected','selected');
+  selCtrl.append(oAutreCtrl);
+  grid2.append(el('div',{class:'field'}, el('label','Contrôleur'), selCtrl));
   c.append(grid2);
 
   if(state.meta.soustraitant === '__autre__'){
     c.append(el('div',{class:'field'},
       el('label','Précisez le sous-traitant'),
       el('input',{type:'text', value:state.meta.soustraitant_autre, oninput:(e)=>state.meta.soustraitant_autre=e.target.value})));
+  }
+  if(state.meta.controleur === '__autre__'){
+    c.append(el('div',{class:'field'},
+      el('label','Précisez le contrôleur'),
+      el('input',{type:'text', value:state.meta.controleur_autre, oninput:(e)=>state.meta.controleur_autre=e.target.value})));
   }
   return c;
 }
@@ -423,35 +453,49 @@ function renderChapterSection(def){
   return c;
 }
 
+/* Verrou tactile des zones de signature : évite qu'un appui accidentel sur le pavé
+   (scroll, glissement de doigt) ne trace un trait. Il faut d'abord taper sur
+   « Appuyer pour signer » pour déverrouiller le pavé de cette signature. */
+const sigUnlocked = { 1:false, 2:false };
+
+function renderSigCell(n, label, placeholder, nameKey){
+  const cell = el('div',{class:'sig-cell'});
+  cell.append(el('div',{class:'sig-label'}, label));
+  cell.append(el('input',{type:'text', placeholder:placeholder, value:state.sig[nameKey], oninput:(e)=>state.sig[nameKey]=e.target.value}));
+
+  const wrap = el('div',{class:'sig-cwrap'});
+  const canvas = el('canvas',{class:'sig-canvas', id:'sig'+n});
+  wrap.append(canvas);
+
+  const imgKey = n===1 ? 'soustraitant_img' : 'loxam_img';
+  const alreadySigned = !!state.sig[imgKey];
+  sigUnlocked[n] = alreadySigned;
+
+  const lock = el('button',{type:'button', class:'sig-lock', style: alreadySigned ? 'display:none;' : '', onclick:()=>{
+    sigUnlocked[n] = true;
+    lock.style.display = 'none';
+  }});
+  lock.innerHTML = icon('edit',16) + '<span>Appuyer pour signer</span>';
+  wrap.append(lock);
+  cell.append(wrap);
+
+  const clr = el('button',{type:'button', class:'sig-clear', onclick:()=>clearSig(n)});
+  clr.innerHTML = icon('x',13)+'<span>Effacer</span>';
+  cell.append(clr);
+  return cell;
+}
+
 function renderSignaturesSection(){
   const c = el('section',{class:'card', id:'sec-signatures'});
-  c.append(el('h2', icon('clipboardCheck',16), el('span','Validation')));
-
-  const cell1 = el('div',{class:'sig-cell'});
-  cell1.append(el('div',{class:'sig-label'},'Signature du sous-traitant'));
-  cell1.append(el('input',{type:'text', placeholder:'Nom du signataire', value:state.sig.soustraitant_nom, oninput:(e)=>state.sig.soustraitant_nom=e.target.value}));
-  const canvas1 = el('canvas',{class:'sig-canvas', id:'sig1'});
-  cell1.append(canvas1);
-  const clr1 = el('button',{type:'button', class:'sig-clear', onclick:()=>clearSig(1)});
-  clr1.innerHTML = icon('x',13)+'<span>Effacer</span>';
-  cell1.append(clr1);
-  c.append(cell1);
-
-  const cell2 = el('div',{class:'sig-cell'});
-  cell2.append(el('div',{class:'sig-label'},'Signature du représentant Loxam Module'));
-  cell2.append(el('input',{type:'text', placeholder:'Nom du représentant', value:state.sig.loxam_nom, oninput:(e)=>state.sig.loxam_nom=e.target.value}));
-  const canvas2 = el('canvas',{class:'sig-canvas', id:'sig2'});
-  cell2.append(canvas2);
-  const clr2 = el('button',{type:'button', class:'sig-clear', onclick:()=>clearSig(2)});
-  clr2.innerHTML = icon('x',13)+'<span>Effacer</span>';
-  cell2.append(clr2);
-  c.append(cell2);
-
+  c.append(el('h2', iconNode('clipboardCheck',16), el('span','Validation')));
+  c.append(el('p',{class:'hint'}, 'Le pavé de signature est verrouillé par défaut : appuyer dessus pour l\'activer, afin d\'éviter une signature accidentelle.'));
+  c.append(renderSigCell(1, 'Signature du sous-traitant', 'Nom du signataire', 'soustraitant_nom'));
+  c.append(renderSigCell(2, 'Signature du représentant Loxam Module', 'Nom du représentant', 'loxam_nom'));
   return c;
 }
 
 let sig1canvas=null, sig2canvas=null;
-function setupSig(canvas){
+function setupSig(canvas, n){
   const ctx = canvas.getContext('2d');
   function resize(){
     const ratio = window.devicePixelRatio||1;
@@ -463,14 +507,31 @@ function setupSig(canvas){
   }
   resize();
   let drawing=false, hasInk=false;
+  const imgKey = n===1 ? 'soustraitant_img' : 'loxam_img';
+  // Restaure la signature déjà tracée précédemment (le canvas est recréé à chaque rendu)
+  if(state.sig[imgKey]){
+    const im = new Image();
+    im.onload = ()=>{
+      const rect = canvas.getBoundingClientRect();
+      ctx.drawImage(im, 0, 0, rect.width, rect.height);
+      hasInk = true;
+    };
+    im.src = state.sig[imgKey];
+  }
   function pos(e){
     const rect = canvas.getBoundingClientRect();
     const p = e.touches ? e.touches[0] : e;
     return {x:p.clientX-rect.left, y:p.clientY-rect.top};
   }
-  function start(e){ drawing=true; hasInk=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
-  function move(e){ if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
-  function end(){ drawing=false; }
+  function capture(){
+    try{ state.sig[imgKey] = canvas.toDataURL('image/png'); saveDraft(true); }catch(e){}
+  }
+  function start(e){
+    if(!sigUnlocked[n]) return;
+    drawing=true; hasInk=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault();
+  }
+  function move(e){ if(!drawing || !sigUnlocked[n]) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ if(drawing) capture(); drawing=false; }
   canvas.addEventListener('mousedown',start);
   canvas.addEventListener('mousemove',move);
   window.addEventListener('mouseup',end);
@@ -478,9 +539,16 @@ function setupSig(canvas){
   canvas.addEventListener('touchmove',move,{passive:false});
   canvas.addEventListener('touchend',end);
   canvas._hasInk = ()=>hasInk;
-  canvas._clear = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); hasInk=false; };
+  canvas._clear = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); hasInk=false; state.sig[imgKey]=''; };
 }
-function clearSig(n){ (n===1?sig1canvas:sig2canvas)._clear(); }
+function clearSig(n){
+  (n===1?sig1canvas:sig2canvas)._clear();
+  sigUnlocked[n] = false;
+  const wrap = (n===1?sig1canvas:sig2canvas).closest('.sig-cwrap');
+  const lock = wrap && wrap.querySelector('.sig-lock');
+  if(lock) lock.style.display = '';
+  saveDraft(true);
+}
 
 /* ---------- AFFAIRES RÉCENTES ---------- */
 function loadAffaires(){
@@ -512,8 +580,8 @@ function renderAll(){
   ));
   sig1canvas = document.getElementById('sig1');
   sig2canvas = document.getElementById('sig2');
-  setupSig(sig1canvas);
-  setupSig(sig2canvas);
+  setupSig(sig1canvas, 1);
+  setupSig(sig2canvas, 2);
   loadAffaires();
   window.scrollTo(0, scrollY);
   updateProgress();
@@ -563,6 +631,7 @@ function applyDateParDefaut(){
 function openResetModal(){
   if(!confirm('Réinitialiser toute la fiche ? Cette action efface le brouillon en cours.')) return;
   state = JSON.parse(JSON.stringify(INITIAL_STATE));
+  sigUnlocked[1] = false; sigUnlocked[2] = false;
   applyDateParDefaut();
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   renderAll();
@@ -638,7 +707,7 @@ async function generatePDF(){
     ['N° DU MODULE', state.meta.module || '—'],
     ['AFFAIRE / CLIENT', state.meta.affaire || '—'],
     ['SOUS-TRAITANT', state.meta.soustraitant==='__autre__' ? (state.meta.soustraitant_autre||'—') : (state.meta.soustraitant||'—')],
-    ['CONTRÔLEUR', state.meta.controleur || '—']
+    ['CONTRÔLEUR', state.meta.controleur==='__autre__' ? (state.meta.controleur_autre||'—') : (state.meta.controleur||'—')]
   ];
   const colW = CW/2;
   infos.forEach((pair, i)=>{
