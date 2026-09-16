@@ -1,15 +1,17 @@
 {
-  "name": "Checklist Parc - LOXAM MODULE",
+  "name": "Checklist Parc — Sortie de hangar",
   "short_name": "Checklist Parc",
-  "description": "Checklist de contrôle qualité pour la sortie de hangar des modules LOXAM Module",
+  "description": "Checklist Parc — contrôle qualité sortie de hangar Loxam Module",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#FAF6F0",
+  "orientation": "portrait",
+  "background_color": "#F5F6F8",
   "theme_color": "#C8102E",
-  "orientation": "any",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
