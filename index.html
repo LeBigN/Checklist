@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#C8102E">
+<title>Checklist Parc</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --red:#C8102E;
+  --red-dark:#9c0c22;
+  --warmb:#DBD4C9;
+  --warmf:#FAF6F0;
+  --ink:#2b2926;
+  --ok:#1f8a4c;
+  --ko:#c8102e;
+  --grey:#7a746c;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--warmf);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+body{padding-bottom:96px;}
+
+header.topbar{
+  background:linear-gradient(180deg,#ffffff, #fbf8f4);
+  border-bottom:3px solid var(--red);
+  padding:14px 16px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:30;
+}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .logo{font-weight:800;font-size:18px;letter-spacing:.5px;}
+.brand .logo .lox{color:var(--red);}
+.brand .logo .mod{color:#555;font-weight:700;}
+.brand .logo .sq{display:inline-block;width:9px;height:9px;background:var(--red);margin-right:4px;vertical-align:middle;}
+.brand .sub{font-size:11px;color:var(--grey);margin-top:1px;}
+.app-title{text-align:right;}
+.app-title .t1{font-weight:800;color:var(--red);font-size:15px;line-height:1.1;}
+.app-title .t2{font-size:10px;color:var(--grey);}
+
+main{max-width:720px;margin:0 auto;padding:14px 12px 10px;}
+
+.card{
+  background:#fff;
+  border:1px solid var(--warmb);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+}
+.card h2{margin:0 0 10px;font-size:14px;color:var(--red-dark);text-transform:uppercase;letter-spacing:.4px;}
+
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:12.5px;color:var(--grey);margin-bottom:4px;font-weight:600;}
+.field input[type=text],.field input[type=date],.field select,.field textarea{
+  width:100%;padding:10px 11px;border:1px solid #d8d2c8;border-radius:9px;
+  font-size:15px;background:#fff;color:var(--ink);font-family:inherit;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--red);outline-offset:-1px;border-color:var(--red);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* Chapters */
+.chapter{margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--warmb);background:#fff;}
+.chapter-head{
+  background:linear-gradient(180deg,var(--red),var(--red-dark));
+  color:#fff;padding:11px 14px;font-weight:700;font-size:14.5px;
+  display:flex;align-items:center;gap:9px;
+}
+.chapter-head .ic{font-size:17px;}
+.chapter-progress{margin-left:auto;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.18);padding:2px 8px;border-radius:20px;}
+.chapter-body{padding:4px 10px 8px;}
+
+.line{
+  display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid #f0ece4;
+}
+.line:last-child{border-bottom:none;}
+.line .txt{flex:1;font-size:14px;line-height:1.32;}
+.line .txt small{display:block;color:var(--grey);font-size:11.5px;margin-top:1px;}
+
+.toggle{display:flex;gap:4px;flex-shrink:0;}
+.toggle button{
+  border:1.5px solid #d8d2c8;background:#fff;border-radius:8px;
+  width:40px;height:38px;font-size:18px;display:flex;align-items:center;justify-content:center;
+  padding:0;color:#b8b0a3;
+}
+.toggle button.ok.active{background:var(--ok);border-color:var(--ok);color:#fff;}
+.toggle button.ko.active{background:var(--ko);border-color:var(--ko);color:#fff;}
+
+.photobtn{
+  flex-shrink:0;width:38px;height:38px;border-radius:8px;border:1.5px solid #d8d2c8;background:#fff;
+  font-size:16px;display:flex;align-items:center;justify-content:center;position:relative;
+}
+.photobtn.has-photo{border-color:var(--red);color:var(--red);}
+.photobtn .dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;background:var(--red);border-radius:50%;}
+
+.photo-strip{display:flex;gap:6px;flex-wrap:wrap;padding:0 4px 10px;}
+.photo-thumb{position:relative;width:56px;height:56px;border-radius:7px;overflow:hidden;border:1px solid var(--warmb);}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-thumb .rm{position:absolute;top:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:10px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:0 0 0 6px;}
+
+/* signatures */
+.sig-block{margin-bottom:14px;}
+.sig-block label{font-size:12.5px;color:var(--grey);font-weight:600;display:block;margin-bottom:6px;}
+canvas.sigpad{
+  width:100%;height:150px;background:#fff;border:1.5px dashed #c9c1b3;border-radius:10px;touch-action:none;
+}
+.sig-actions{display:flex;justify-content:space-between;align-items:center;margin-top:5px;}
+.sig-actions button{background:none;border:none;color:var(--red);font-size:12.5px;font-weight:600;padding:4px 2px;}
+.sig-name{margin-top:6px;}
+
+/* footer */
+footer.dock{
+  position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--warmb);
+  display:flex;justify-content:center;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  z-index:40;
+}
+footer.dock button{
+  border:none;border-radius:11px;padding:12px 16px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;
+}
+.btn-reset{background:#f1ede6;color:#7a746c;}
+.btn-save{background:#efe6da;color:#8a5a1e;}
+.btn-pdf{background:var(--red);color:#fff;flex:1;justify-content:center;}
+
+.toast{
+  position:fixed;bottom:78px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;
+}
+.toast.show{opacity:1;}
+
+input[type=file]{display:none;}
+
+.hint{font-size:11.5px;color:var(--grey);padding:2px 4px 8px;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div>
+      <div class="logo"><span class="sq"></span><span class="lox">LOXAM</span> <span class="mod">MODULE</span></div>
+      <div class="sub">Contrôle qualité</div>
+    </div>
+  </div>
+  <div class="app-title">
+    <div class="t1">📋 CHECKLIST PARC</div>
+    <div class="t2">Sortie de hangar</div>
+  </div>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Informations générales</h2>
+    <div class="row2">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="f_date">
+      </div>
+      <div class="field">
+        <label>Numéro du module</label>
+        <input type="text" id="f_module" placeholder="Ex : M-1234">
+      </div>
+    </div>
+    <div class="field">
+      <label>Affaire / Client</label>
+      <input type="text" id="f_affaire" placeholder="Nom du chantier ou du client" list="dl_affaires">
+      <datalist id="dl_affaires"></datalist>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Sous-traitant</label>
+        <select id="f_soustraitant">
+          <option value="">— Sélectionner —</option>
+          <option>CRPS</option>
+          <option>TCPP</option>
+          <option>TERMICLIM</option>
+          <option>CC BAT</option>
+          <option>EMS</option>
+          <option>CMTG</option>
+          <option>MOKRANE</option>
+          <option value="__autre__">Autre…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Contrôleur</label>
+        <input type="text" id="f_controleur" placeholder="Nom du contrôleur">
+      </div>
+    </div>
+    <div class="field" id="wrap_autre" style="display:none;">
+      <label>Précisez le sous-traitant</label>
+      <input type="text" id="f_soustraitant_autre" placeholder="Nom du sous-traitant">
+    </div>
+  </div>
+
+  <div id="chapters"></div>
+
+  <div class="card">
+    <h2>Validation</h2>
+    <div class="sig-block">
+      <label>Nom du sous-traitant (signataire)</label>
+      <input type="text" id="sig1_name" class="field-inline" style="width:100%;padding:10px 11px;border:1px solid #d8d2c8;border-radius:9px;font-size:15px;">
+      <label style="margin-top:10px;">Signature du sous-traitant</label>
+      <canvas class="sigpad" id="sig1"></canvas>
+      <div class="sig-actions">
+        <button type="button" onclick="clearSig(1)">✕ Effacer</button>
+      </div>
+    </div>
+    <div class="sig-block">
+      <label>Nom du représentant Loxam Module (chef de parc)</label>
+      <input type="text" id="sig2_name" class="field-inline" style="width:100%;padding:10px 11px;border:1px solid #d8d2c8;border-radius:9px;font-size:15px;">
+      <label style="margin-top:10px;">Signature du représentant Loxam Module</label>
+      <canvas class="sigpad" id="sig2"></canvas>
+      <div class="sig-actions">
+        <button type="button" onclick="clearSig(2)">✕ Effacer</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="dock">
+  <button class="btn-reset" onclick="resetForm()">🗑</button>
+  <button class="btn-save" onclick="saveDraft()">💾</button>
+  <button class="btn-pdf" onclick="generatePDF()">📄 Générer le PDF</button>
+</footer>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileCam" accept="image/*" capture="environment">
+<input type="file" id="fileGal" accept="image/*">
+
+<script>
+/* ===================== DONNÉES CHECKLIST ===================== */
+const CHAPTERS = [
+{ id:"toiture", ic:"🏠", title:"Toiture", lines:[
+  "Étanchéité vérifiée",
+  "Chéneaux propres",
+  "Autocollants LOXAM conformes",
+  "Joints silicones grattés sur la structure"
+]},
+{ id:"panneautage", ic:"🎨", title:"Panneautage et peinture", lines:[
+  "Configuration conforme au plan",
+  "Fixation des panneaux conforme (clés bois et cornières bien fixées pour éviter le jeu)",
+  "Joints d'étanchéité bien fait entre la cornière et les poteaux à l'extérieur",
+  "Peinture uniforme sans trop de différences de nuances entre les panneaux"
+]},
+{ id:"plafond", ic:"🏢", title:"Plafond", lines:[
+  "État des bacs convenable",
+  "Couleur des bacs uniforme",
+  "Bacs rivetés"
+]},
+{ id:"portes", ic:"🚪", title:"Portes", lines:[
+  "Ouverture/fermeture des portes vérifiées",
+  "Ferme-porte réglé",
+  "Cylindre : 3 clés présentes",
+  "Présence de la gâche en plastique noir vissée au chambranle de la porte extérieure",
+  "Présence sous les portes des baguettes d'étanchéité"
+]},
+{ id:"fenetres", ic:"🪟", title:"Fenêtres", lines:[
+  "Fenêtre bien nettoyée",
+  "Volet-roulant et enrouleur de sangle fonctionnels",
+  "Barrette d'aération du coffret de volet roulant présente"
+]},
+{ id:"sol", ic:"🧱", title:"Sol", lines:[
+  "Le plancher ne s'affaisse pas",
+  "Propreté du revêtement de sol correct",
+  "État du revêtement de sol convenable"
+]},
+{ id:"elec", ic:"⚡", title:"Électricité", lines:[
+  "Boîte de raccordement conforme (présence des bouchons)",
+  "Prises de courant contrôlées",
+  "Interrupteur différentiel 30 mA fonctionnel",
+  "Luminaires fonctionnels",
+  "Chauffages fonctionnels et bien fixés",
+  "Climatiseurs bien fixés, testés et fonctionnels"
+]},
+{ id:"sanitaires", ic:"🚿", title:"Spécificités sanitaires", lines:[
+  "Tests du chauffe-eau effectués (mise en eau et alimentation)",
+  "Protocole anti-légionellose effectué (désinfection du réseau et mise en chauffe)",
+  "Fixation des prestos vérifiée",
+  "Alimentation des chasses d'eau contrôlée",
+  "Absence de fuite"
+]},
+{ id:"assemblage", ic:"🔧", title:"Pièces d'assemblage (carters, couvertines etc.)", lines:[
+  "En état et en nombre suffisant",
+  "Présence de laine de roche dans les cache-angles"
+]},
+{ id:"mobilier", ic:"🪑", title:"Pièces de mobilier", lines:[
+  "Quantité conforme au plan",
+  "Correctement conditionnées dans le module",
+  "Armoires vestiaires correctement montées"
+]}
+];
+
+const STORAGE_KEY = "checklist_parc_draft_v1";
+const AFFAIRES_KEY = "checklist_parc_affaires_v1";
+
+let state = { lines:{}, photos:{} };
+
+/* ===================== RENDU DES CHAPITRES ===================== */
+const chaptersEl = document.getElementById("chapters");
+
+function lineKey(chId, idx){ return chId+"_"+idx; }
+
+function renderChapters(){
+  chaptersEl.innerHTML = "";
+  CHAPTERS.forEach(ch=>{
+    const wrap = document.createElement("div");
+    wrap.className = "chapter";
+    const head = document.createElement("div");
+    head.className = "chapter-head";
+    head.innerHTML = `<span class="ic">${ch.ic}</span><span>${ch.title}</span><span class="chapter-progress" id="prog_${ch.id}">0/${ch.lines.length}</span>`;
+    wrap.appendChild(head);
+    const body = document.createElement("div");
+    body.className = "chapter-body";
+    ch.lines.forEach((txt,idx)=>{
+      const key = lineKey(ch.id, idx);
+      const line = document.createElement("div");
+      line.className = "line";
+      line.innerHTML = `
+        <div class="txt">${txt}</div>
+        <div class="toggle">
+          <button type="button" class="ok" data-key="${key}" data-val="ok" onclick="setStatus('${key}','ok')">✓</button>
+          <button type="button" class="ko" data-key="${key}" data-val="ko" onclick="setStatus('${key}','ko')">✕</button>
+        </div>
+        <button type="button" class="photobtn" id="pb_${key}" onclick="openPhotoMenu('${key}')">📷</button>
+      `;
+      body.appendChild(line);
+      const strip = document.createElement("div");
+      strip.className = "photo-strip";
+      strip.id = "strip_"+key;
+      strip.style.display = "none";
+      body.appendChild(strip);
+    });
+    wrap.appendChild(body);
+    chaptersEl.appendChild(wrap);
+  });
+}
+renderChapters();
+
+function setStatus(key, val){
+  if(state.lines[key] === val){ delete state.lines[key]; }
+  else { state.lines[key] = val; }
+  document.querySelectorAll(`button[data-key="${key}"]`).forEach(b=>{
+    b.classList.toggle("active", state.lines[key]===b.dataset.val);
+  });
+  updateProgress();
+}
+
+function updateProgress(){
+  CHAPTERS.forEach(ch=>{
+    let n=0;
+    ch.lines.forEach((_,idx)=>{ if(state.lines[lineKey(ch.id,idx)]) n++; });
+    const el = document.getElementById("prog_"+ch.id);
+    if(el) el.textContent = n+"/"+ch.lines.length;
+  });
+}
+
+/* ===================== PHOTOS ===================== */
+let currentPhotoKey = null;
+const fileCam = document.getElementById("fileCam");
+const fileGal = document.getElementById("fileGal");
+
+function openPhotoMenu(key){
+  currentPhotoKey = key;
+  if(confirm("Ajouter une photo ?\nOK = Prendre une photo\nAnnuler = Choisir dans la galerie")){
+    fileCam.click();
+  } else {
+    fileGal.click();
+  }
+}
+
+function handleFile(file){
+  if(!file || !currentPhotoKey) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    if(!state.photos[currentPhotoKey]) state.photos[currentPhotoKey]=[];
+    state.photos[currentPhotoKey].push(e.target.result);
+    renderPhotoStrip(currentPhotoKey);
+  };
+  reader.readAsDataURL(file);
+}
+fileCam.addEventListener("change", e=>handleFile(e.target.files[0]));
+fileGal.addEventListener("change", e=>handleFile(e.target.files[0]));
+
+function renderPhotoStrip(key){
+  const strip = document.getElementById("strip_"+key);
+  const photos = state.photos[key] || [];
+  const btn = document.getElementById("pb_"+key);
+  if(photos.length){
+    btn.classList.add("has-photo");
+    btn.innerHTML = `📷<span class="dot"></span>`;
+    strip.style.display = "flex";
+  } else {
+    btn.classList.remove("has-photo");
+    btn.innerHTML = "📷";
+    strip.style.display = "none";
+  }
+  strip.innerHTML = "";
+  photos.forEach((src,i)=>{
+    const th = document.createElement("div");
+    th.className = "photo-thumb";
+    th.innerHTML = `<img src="${src}"><div class="rm" onclick="removePhoto('${key}',${i})">✕</div>`;
+    strip.appendChild(th);
+  });
+}
+
+function removePhoto(key, i){
+  state.photos[key].splice(i,1);
+  renderPhotoStrip(key);
+}
+
+/* ===================== SIGNATURES ===================== */
+function setupSig(canvas){
+  const ctx = canvas.getContext("2d");
+  function resize(){
+    const ratio = window.devicePixelRatio||1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width*ratio;
+    canvas.height = rect.height*ratio;
+    ctx.scale(ratio,ratio);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#1a1a1a";
+  }
+  resize();
+  let drawing=false, hasInk=false;
+  function pos(e){
+    const rect = canvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return {x:p.clientX-rect.left, y:p.clientY-rect.top};
+  }
+  function start(e){ drawing=true; hasInk=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+  function move(e){ if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ drawing=false; }
+  canvas.addEventListener("mousedown",start);
+  canvas.addEventListener("mousemove",move);
+  window.addEventListener("mouseup",end);
+  canvas.addEventListener("touchstart",start,{passive:false});
+  canvas.addEventListener("touchmove",move,{passive:false});
+  canvas.addEventListener("touchend",end);
+  canvas._hasInk = ()=>hasInk;
+  canvas._clear = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); hasInk=false; };
+}
+const sig1 = document.getElementById("sig1");
+const sig2 = document.getElementById("sig2");
+setupSig(sig1);
+setupSig(sig2);
+function clearSig(n){ (n===1?sig1:sig2)._clear(); }
+
+/* ===================== DATE PAR DÉFAUT ===================== */
+document.getElementById("f_date").value = new Date().toISOString().slice(0,10);
+
+document.getElementById("f_soustraitant").addEventListener("change", e=>{
+  document.getElementById("wrap_autre").style.display = e.target.value==="__autre__" ? "block" : "none";
+});
+
+/* ===================== AFFAIRES RÉCENTES ===================== */
+function loadAffaires(){
+  try{
+    const arr = JSON.parse(localStorage.getItem(AFFAIRES_KEY)||"[]");
+    const dl = document.getElementById("dl_affaires");
+    dl.innerHTML = arr.map(a=>`<option value="${a}">`).join("");
+  }catch(e){}
+}
+function saveAffaire(name){
+  if(!name) return;
+  try{
+    let arr = JSON.parse(localStorage.getItem(AFFAIRES_KEY)||"[]");
+    arr = [name, ...arr.filter(a=>a!==name)].slice(0,25);
+    localStorage.setItem(AFFAIRES_KEY, JSON.stringify(arr));
+  }catch(e){}
+}
+loadAffaires();
+
+/* ===================== TOAST ===================== */
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+/* ===================== RESET / SAVE ===================== */
+function collectForm(){
+  return {
+    date: document.getElementById("f_date").value,
+    module: document.getElementById("f_module").value,
+    affaire: document.getElementById("f_affaire").value,
+    soustraitant: document.getElementById("f_soustraitant").value,
+    soustraitant_autre: document.getElementById("f_soustraitant_autre").value,
+    controleur: document.getElementById("f_controleur").value,
+    sig1_name: document.getElementById("sig1_name").value,
+    sig2_name: document.getElementById("sig2_name").value,
+    lines: state.lines,
+    photos: state.photos
+  };
+}
+
+function resetForm(){
+  if(!confirm("Réinitialiser toute la fiche ?")) return;
+  state = { lines:{}, photos:{} };
+  document.getElementById("f_module").value = "";
+  document.getElementById("f_affaire").value = "";
+  document.getElementById("f_soustraitant").value = "";
+  document.getElementById("f_soustraitant_autre").value = "";
+  document.getElementById("f_controleur").value = "";
+  document.getElementById("sig1_name").value = "";
+  document.getElementById("sig2_name").value = "";
+  document.getElementById("f_date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("wrap_autre").style.display = "none";
+  clearSig(1); clearSig(2);
+  renderChapters();
+  localStorage.removeItem(STORAGE_KEY);
+  toast("Fiche réinitialisée");
+}
+
+function saveDraft(){
+  const data = collectForm();
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    toast("Brouillon enregistré ✓");
+  }catch(e){
+    toast("Erreur d'enregistrement (stockage plein ?)");
+  }
+}
+
+function loadDraft(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    document.getElementById("f_date").value = d.date || new Date().toISOString().slice(0,10);
+    document.getElementById("f_module").value = d.module||"";
+    document.getElementById("f_affaire").value = d.affaire||"";
+    document.getElementById("f_soustraitant").value = d.soustraitant||"";
+    document.getElementById("f_soustraitant_autre").value = d.soustraitant_autre||"";
+    document.getElementById("f_controleur").value = d.controleur||"";
+    document.getElementById("sig1_name").value = d.sig1_name||"";
+    document.getElementById("sig2_name").value = d.sig2_name||"";
+    document.getElementById("wrap_autre").style.display = d.soustraitant==="__autre__"?"block":"none";
+    state.lines = d.lines || {};
+    state.photos = d.photos || {};
+    document.querySelectorAll(".toggle button").forEach(b=>{
+      b.classList.toggle("active", state.lines[b.dataset.key]===b.dataset.val);
+    });
+    Object.keys(state.photos).forEach(k=>renderPhotoStrip(k));
+    updateProgress();
+  }catch(e){}
+}
+loadDraft();
+
+/* ===================== LOGO (fallback typographique) ===================== */
+/* Remplacer LOGO_B64 par le PNG transparent officiel LOXAM MODULE (base64) pour un rendu identique aux autres apps de l'écosystème. */
+const LOGO_B64 = null;
+
+/* ===================== GÉNÉRATION PDF ===================== */
+function loadJsPDF(){
+  return new Promise((resolve,reject)=>{
+    if(window.jspdf){ resolve(); return; }
+    const s = document.createElement("script");
+    s.src = "jspdf.umd.min.js";
+    s.onload = ()=>resolve();
+    s.onerror = ()=>{
+      const s2 = document.createElement("script");
+      s2.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      s2.onload = ()=>resolve();
+      s2.onerror = reject;
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s);
+  });
+}
+
+const REDD = [200,16,46];
+const WARMB = [219,212,201];
+const WARMF = [250,246,240];
+const INK = [43,41,38];
+const GREY = [122,116,108];
+const M = 40;
+
+function addLegalFooter(doc, pageW, pageH){
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(6.6);
+  doc.setTextColor(...GREY);
+  const txt = "LOXAM MODULE – S.A.S.U. CAPITAL DE 487 500 € – SIEGE SOCIAL : 276, RUE NICOLAS COATANLEM – 56850 CAUDAN – R.C.S. LORIENT B 433 911 948 – N° T.V.A : FR27 433 911 948 – NAF 7732Z";
+  doc.text(txt, pageW/2, pageH-16, {align:"center"});
+}
+
+function drawHeaderBand(doc, pageW, y, h, title){
+  doc.setFillColor(...REDD);
+  doc.rect(M, y, pageW-2*M, h, "F");
+  doc.setTextColor(255,255,255);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(10.5);
+  doc.text(title, M+8, y+h/2+3.2);
+  return y+h;
+}
+
+async function generatePDF(){
+  const data = collectForm();
+  if(!data.affaire && !data.module){
+    if(!confirm("Affaire et numéro de module sont vides. Générer quand même le PDF ?")) return;
+  }
+  toast("Génération du PDF…");
+  await loadJsPDF();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"pt", format:"a4"});
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  let y = M;
+
+  // Bandeau titre
+  doc.setFillColor(...WARMF);
+  doc.rect(0,0,pageW,pageH,"F");
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(17);
+  doc.setTextColor(...REDD);
+  doc.text("LOXAM", M, y+16);
+  doc.setTextColor(90,90,90);
+  doc.text(" MODULE", M+42, y+16);
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...GREY);
+  doc.text("Checklist Parc — Sortie de hangar", M, y+30);
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(13);
+  doc.setTextColor(...INK);
+  doc.text("CHECK-LIST DE CONTRÔLE QUALITÉ", pageW-M, y+16, {align:"right"});
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...GREY);
+  doc.text("Sortie de module — hangar", pageW-M, y+30, {align:"right"});
+
+  y += 46;
+  doc.setDrawColor(...REDD);
+  doc.setLineWidth(1.4);
+  doc.line(M, y, pageW-M, y);
+  y += 16;
+
+  // Infos générales - grille
+  const infos = [
+    ["Date", data.date || "-"],
+    ["Numéro du module", data.module || "-"],
+    ["Affaire / Client", data.affaire || "-"],
+    ["Sous-traitant", data.soustraitant==="__autre__" ? (data.soustraitant_autre||"-") : (data.soustraitant||"-")],
+    ["Contrôleur", data.controleur || "-"]
+  ];
+  const colW = (pageW-2*M)/2;
+  doc.setFontSize(9);
+  infos.forEach((pair,i)=>{
+    const col = i%2, row = Math.floor(i/2);
+    const x = M + col*colW;
+    const yy = y + row*26;
+    doc.setFont("helvetica","bold");
+    doc.setTextColor(...GREY);
+    doc.text(pair[0].toUpperCase(), x, yy);
+    doc.setFont("helvetica","normal");
+    doc.setTextColor(...INK);
+    doc.setFontSize(10.5);
+    doc.text(String(pair[1]), x, yy+13);
+    doc.setFontSize(9);
+  });
+  y += Math.ceil(infos.length/2)*26 + 14;
+
+  function ensureSpace(need){
+    if(y+need > pageH-70){
+      addLegalFooter(doc,pageW,pageH);
+      doc.addPage();
+      doc.setFillColor(...WARMF); doc.rect(0,0,pageW,pageH,"F");
+      y = M;
+    }
+  }
+
+  const photoRefs = []; // {chTitle, lineTxt, src}
+
+  CHAPTERS.forEach(ch=>{
+    ensureSpace(26);
+    y = drawHeaderBand(doc, pageW, y, 20, ch.title.toUpperCase());
+    y += 4;
+    ch.lines.forEach((txt,idx)=>{
+      const key = lineKey(ch.id, idx);
+      const status = state.lines[key];
+      const wrapWidth = pageW-2*M-60;
+      const wrapped = doc.splitTextToSize(txt, wrapWidth);
+      const lineH = Math.max(16, wrapped.length*11+6);
+      ensureSpace(lineH+4);
+      // status pastille
+      let label = "—", col = GREY;
+      if(status==="ok"){ label="CONFORME"; col=[31,138,76]; }
+      if(status==="ko"){ label="NON CONFORME"; col=[200,16,46]; }
+      doc.setFillColor(...col);
+      doc.circle(M+5, y+3, 3, "F");
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(9.3);
+      doc.setTextColor(...INK);
+      doc.text(wrapped, M+16, y+4);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(7.6);
+      doc.setTextColor(...col);
+      doc.text(label, pageW-M, y+4, {align:"right"});
+      y += lineH;
+
+      const photos = state.photos[key];
+      if(photos && photos.length){
+        photos.forEach(src=>photoRefs.push({chapter:ch.title, line:txt, src}));
+      }
+    });
+    y += 10;
+  });
+
+  // Annexe photos
+  if(photoRefs.length){
+    ensureSpace(30);
+    y = drawHeaderBand(doc, pageW, y, 20, "ANNEXE PHOTOS");
+    y += 10;
+    let x = M;
+    const thumbW = 110, thumbH = 82, gap = 12;
+    let rowMaxH = 0;
+    photoRefs.forEach(p=>{
+      if(x + thumbW > pageW-M){ x = M; y += rowMaxH + 20; rowMaxH = 0; }
+      ensureSpace(thumbH+24);
+      try{ doc.addImage(p.src, "JPEG", x, y, thumbW, thumbH); }catch(e){}
+      doc.setFontSize(6.6);
+      doc.setTextColor(...GREY);
+      const cap = doc.splitTextToSize(p.chapter, thumbW);
+      doc.text(cap, x, y+thumbH+9);
+      rowMaxH = Math.max(rowMaxH, thumbH+18);
+      x += thumbW+gap;
+    });
+    y += rowMaxH+10;
+  }
+
+  // Signatures
+  ensureSpace(160);
+  y = drawHeaderBand(doc, pageW, y, 20, "VALIDATION");
+  y += 14;
+  const sigW = (pageW-2*M-20)/2;
+  [
+    {name:data.sig1_name, label:"Sous-traitant", canvas:sig1},
+    {name:data.sig2_name, label:"Représentant Loxam Module", canvas:sig2}
+  ].forEach((s,i)=>{
+    const x = M + i*(sigW+20);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...INK);
+    doc.text(s.label, x, y);
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...GREY);
+    doc.text(s.name || "-", x, y+12);
+    doc.setDrawColor(...WARMB);
+    doc.setLineWidth(1);
+    doc.rect(x, y+18, sigW, 70);
+    if(s.canvas._hasInk()){
+      try{ doc.addImage(s.canvas.toDataURL("image/png"), "PNG", x+4, y+22, sigW-8, 62); }catch(e){}
+    }
+  });
+
+  addLegalFooter(doc, pageW, pageH);
+
+  // pagination
+  const pages = doc.internal.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);
+    doc.setFontSize(7.5);
+    doc.setTextColor(...GREY);
+    doc.text(`Page ${p}/${pages}`, pageW-M, pageH-16, {align:"right"});
+  }
+
+  const fname = `Checklist_Parc_${(data.module||"module").replace(/\s+/g,"_")}_${(data.date||"").replace(/-/g,"")}.pdf`;
+
+  if(data.affaire) saveAffaire(data.affaire);
+
+  await deliverPDF(doc, fname);
+}
+
+async function deliverPDF(doc, fname){
+  try{
+    const blob = doc.output("blob");
+    const file = new File([blob], fname, {type:"application/pdf"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:fname});
+      toast("PDF partagé ✓");
+      return;
+    }
+  }catch(e){ /* fallback below */ }
+  doc.save(fname);
+  toast("PDF téléchargé ✓");
+}
+
+/* ===================== SERVICE WORKER ===================== */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
