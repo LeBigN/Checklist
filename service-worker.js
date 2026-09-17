@@ -1,9 +1,11 @@
-const CACHE_NAME = 'checklist-parc-v8';
+const CACHE_NAME = 'checklist-parc-v9';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './vendor/jspdf.umd.min.js',
+  './apple-touch-icon.png',
+  './apple-touch-icon-precomposed.png',
   './icons/icon-120.png',
   './icons/icon-152.png',
   './icons/icon-167.png',
@@ -52,6 +54,6 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req))
+    caches.match(req, {ignoreSearch:true}).then((cached) => cached || fetch(req))
   );
 });
