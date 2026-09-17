@@ -1,24 +1,36 @@
-const CACHE_NAME = 'checklist-parc-v9';
+const CACHE_NAME = 'checklist-parc-v10';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './vendor/jspdf.umd.min.js',
+  './jspdf.umd.min.js',
   './apple-touch-icon.png',
   './apple-touch-icon-precomposed.png',
-  './icons/icon-120.png',
-  './icons/icon-152.png',
-  './icons/icon-167.png',
-  './icons/icon-180.png',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-192-maskable.png',
-  './icons/icon-512-maskable.png',
+  './icon-120.png',
+  './icon-152.png',
+  './icon-167.png',
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-192-maskable.png',
+  './icon-512-maskable.png',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      // Important : on met chaque fichier en cache indépendamment (au lieu de
+      // cache.addAll, qui annule TOUTE l'installation si un seul fichier est
+      // manquant côté hébergement). Ainsi un fichier oublié ne bloque plus
+      // jamais la mise à jour du reste de l'app.
+      Promise.allSettled(
+        ASSETS.map((url) =>
+          fetch(url).then((res) => {
+            if (res.ok) return cache.put(url, res);
+          }).catch(() => {})
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
