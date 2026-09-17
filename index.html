@@ -6,7 +6,18 @@
 <title>Checklist Parc — Sortie de hangar</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#C8102E">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Checklist Parc">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="apple-touch-icon-precomposed" href="icons/icon-180.png">
 <script src="vendor/jspdf.umd.min.js"></script>
 <style>
 :root{
@@ -870,7 +881,12 @@ async function generatePDF(){
     doc.setTextColor(17,24,39);
   });
 
-  const fname = 'Checklist_Parc_' + (state.meta.module||'module').replace(/[\\/:*?"<>|]/g,'-') + '_' + (state.meta.date||'').replace(/-/g,'') + '.pdf';
+  function sanitizeFileName(s){
+    return String(s||'').replace(/[\\/:*?"<>|]/g,'-').replace(/\s+/g,' ').trim();
+  }
+  const affaireLabel = sanitizeFileName(state.meta.affaire) || 'Checklist Parc';
+  const soustraitantLabel = sanitizeFileName(resolvedSoustraitant());
+  const fname = (soustraitantLabel ? (affaireLabel + ' - ' + soustraitantLabel) : affaireLabel) + '.pdf';
   if(state.meta.affaire) saveAffaire(state.meta.affaire);
   await deliverPDF(doc, fname);
 }
@@ -880,7 +896,9 @@ async function deliverPDF(doc, fname){
     const blob = doc.output('blob');
     const file = new File([blob], fname, {type:'application/pdf'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], title:fname});
+      // Ne pas ajouter "title" (ni "text") ici : certains navigateurs mobiles
+      // génèrent alors un fichier .txt parasite en plus du PDF lors du partage.
+      await navigator.share({files:[file]});
       return;
     }
   }catch(e){ /* fallback */ }

@@ -1,9 +1,13 @@
-const CACHE_NAME = 'checklist-parc-v6';
+const CACHE_NAME = 'checklist-parc-v7';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './vendor/jspdf.umd.min.js',
+  './icons/icon-120.png',
+  './icons/icon-152.png',
+  './icons/icon-167.png',
+  './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-192-maskable.png',
